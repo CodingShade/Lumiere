@@ -50,7 +50,10 @@ export async function createLocation(formData: FormData): Promise<LocationAction
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("locations")
-      .insert(parsed.data)
+      .insert({
+        ...parsed.data,
+        endereco: parsed.data.endereco || null,
+      })
       .select("*")
       .single();
 
@@ -84,7 +87,10 @@ export async function updateLocation(
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("locations")
-      .update(parsed.data)
+      .update({
+        ...parsed.data,
+        endereco: parsed.data.endereco || null,
+      })
       .eq("id", parsedId)
       .select("*")
       .maybeSingle();

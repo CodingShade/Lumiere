@@ -24,7 +24,7 @@ export type Service = {
 export type Location = {
   id: string;
   nome: string;
-  endereco: string;
+  endereco: string | null;
   tipo: LocationType;
   ativo: boolean;
   created_at: string;

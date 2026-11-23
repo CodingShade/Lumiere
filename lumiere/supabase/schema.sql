@@ -26,7 +26,7 @@ create table public.services (
 create table public.locations (
   id uuid primary key default gen_random_uuid(),
   nome text not null,
-  endereco text not null,
+  endereco text,
   tipo public.location_type not null,
   ativo boolean not null default true,
   created_at timestamptz not null default now()
@@ -73,7 +73,11 @@ begin
   insert into public.profiles (id, nome, role)
   values (
     new.id,
-    coalesce(nullif(new.raw_user_meta_data ->> 'nome', ''), split_part(new.email, '@', 1)),
+    coalesce(
+      nullif(new.raw_user_meta_data ->> 'nome', ''),
+      nullif(split_part(coalesce(new.email, new.phone, ''), '@', 1), ''),
+      'Novo usuário'
+    ),
     'cliente'
   );
   return new;

@@ -37,6 +37,8 @@ No SQL Editor do projeto, execute os arquivos nesta ordem:
 2. [`supabase/functions.sql`](./supabase/functions.sql): RPCs transacionais para cadastrar/excluir fotógrafos e atualizar/restaurar o papel associado.
 3. [`supabase/seed.sql`](./supabase/seed.sql), opcional: três serviços e dois locais para demonstração.
 
+Se o schema já tiver sido aplicado antes das correções atuais, execute também [`supabase/fixes.sql`](./supabase/fixes.sql) para permitir locais externos sem endereço e atualizar o fallback do trigger de novos usuários.
+
 Em **Authentication → URL Configuration**, configure `http://localhost:3000` como URL local e permita `http://localhost:3000/auth/callback` como URL de redirecionamento. Para testar confirmação de e-mail, use uma caixa de entrada acessível; em desenvolvimento, a confirmação também pode ser desabilitada nas opções do provedor de e-mail do Supabase.
 
 Inicie o servidor local:
