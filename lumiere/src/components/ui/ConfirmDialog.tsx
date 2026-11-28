@@ -11,6 +11,8 @@ type Props = {
   children: ReactNode;
   error?: string;
   confirmLabel?: string;
+  pendingLabel?: string;
+  intent?: "danger" | "primary";
   pending?: boolean;
   onCancel: () => void;
   onConfirm: () => void;
@@ -22,6 +24,8 @@ export function ConfirmDialog({
   children,
   error,
   confirmLabel = "Excluir",
+  pendingLabel = "Excluindo...",
+  intent = "danger",
   pending = false,
   onCancel,
   onConfirm,
@@ -37,10 +41,10 @@ export function ConfirmDialog({
         <Button
           type="button"
           disabled={pending}
-          className="bg-red-700 hover:bg-red-800"
+          className={intent === "danger" ? "bg-red-700 hover:bg-red-800" : undefined}
           onClick={onConfirm}
         >
-          {pending ? "Excluindo..." : confirmLabel}
+          {pending ? pendingLabel : confirmLabel}
         </Button>
       </div>
     </Modal>

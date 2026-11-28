@@ -42,6 +42,10 @@ export type PhotographerWithProfile = Photographer & {
   profiles: Pick<Profile, "nome" | "telefone">;
 };
 
+export type PhotographerDirectoryEntry = Pick<Photographer, "profile_id" | "especialidade"> & {
+  nome: string;
+};
+
 export type Booking = {
   id: string;
   client_id: string;
@@ -54,6 +58,13 @@ export type Booking = {
   observacoes: string | null;
   link_galeria: string | null;
   created_at: string;
+};
+
+export type BookingWithRelations = Booking & {
+  services: Pick<Service, "nome" | "duracao_min" | "preco">;
+  locations: Pick<Location, "nome" | "tipo" | "endereco">;
+  photographer: Pick<Profile, "nome" | "telefone"> | null;
+  client: Pick<Profile, "nome" | "telefone"> | null;
 };
 
 type Table<
@@ -94,7 +105,12 @@ export type Database = {
       >;
       bookings: Table<Booking>;
     };
-    Views: Record<string, never>;
+    Views: {
+      photographer_directory: {
+        Row: PhotographerDirectoryEntry;
+        Relationships: [];
+      };
+    };
     Functions: {
       current_role_name: { Args: Record<string, never>; Returns: string | null };
       create_photographer: {
@@ -109,6 +125,15 @@ export type Database = {
       delete_photographer: {
         Args: { p_profile_id: string };
         Returns: Photographer | null;
+      };
+      create_demo_photographer: {
+        Args: {
+          p_profile_id: string;
+          p_especialidade: string | null;
+          p_portfolio_url: string | null;
+          p_ativo: boolean;
+        };
+        Returns: Photographer;
       };
     };
     Enums: {

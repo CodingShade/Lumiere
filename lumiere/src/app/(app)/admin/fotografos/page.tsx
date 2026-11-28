@@ -10,6 +10,7 @@ export default async function AdminFotografosPage() {
         <PhotographerManager
           photographers={[]}
           availableProfiles={[]}
+          canCreateDemo={false}
           loadError="Configure as variáveis do Supabase para carregar e gerenciar fotógrafos."
         />
       </PagePlaceholder>
@@ -41,6 +42,7 @@ export default async function AdminFotografosPage() {
       <PhotographerManager
         photographers={photographersResult.data ?? []}
         availableProfiles={availableProfiles}
+        canCreateDemo={Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY)}
         loadError={loadError}
       />
     </PagePlaceholder>

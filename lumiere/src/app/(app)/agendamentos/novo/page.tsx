@@ -15,7 +15,7 @@ export default async function NovoAgendamentoPage() {
   const supabase = await createClient();
   const [servicesResult, photographersResult, locationsResult] = await Promise.all([
     supabase.from("services").select("id, nome, duracao_min, preco").eq("ativo", true).order("nome"),
-    supabase.from("photographers").select("profile_id, especialidade").eq("ativo", true).order("especialidade"),
+    supabase.from("photographer_directory").select("profile_id, nome, especialidade").order("especialidade"),
     supabase.from("locations").select("id, nome, tipo, endereco").eq("ativo", true).order("nome"),
   ]);
   const loadError = servicesResult.error || photographersResult.error || locationsResult.error

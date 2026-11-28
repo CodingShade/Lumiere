@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { createBooking, type BookingActionResult } from "@/actions/bookings";
-import type { Location, Photographer, Service } from "@/types/database";
+import type { Location, PhotographerDirectoryEntry, Service } from "@/types/database";
 import {
   bookingRequestSchema,
   type BookingRequestInput,
@@ -13,10 +13,11 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Toast } from "@/components/ui/Toast";
+import { formatCurrency } from "@/lib/utils";
 
 type Props = {
   services: Pick<Service, "id" | "nome" | "duracao_min" | "preco">[];
-  photographers: Pick<Photographer, "profile_id" | "especialidade">[];
+  photographers: PhotographerDirectoryEntry[];
   locations: Pick<Location, "id" | "nome" | "tipo" | "endereco">[];
   loadError?: string;
 };
@@ -65,14 +66,19 @@ export function BookingForm({ services, photographers, locations, loadError }: P
     }
   }
 
-  const missingOptions = services.length === 0 || photographers.length === 0 || locations.length === 0;
+  const missingOptionLabels = [
+    services.length === 0 ? "serviços ativos" : null,
+    photographers.length === 0 ? "fotógrafos ativos" : null,
+    locations.length === 0 ? "locais ativos" : null,
+  ].filter((label): label is string => label !== null);
+  const missingOptions = missingOptionLabels.length > 0;
 
   return (
     <form onSubmit={handleSubmit(submit)} noValidate className="grid gap-4">
       {loadError && <Toast variant="error">{loadError}</Toast>}
       {!loadError && missingOptions && (
-        <Toast variant="error">
-          Ainda não há serviços, fotógrafos e locais ativos suficientes para solicitar um agendamento.
+        <Toast variant="info">
+          O agendamento ainda não está disponível: faltam {missingOptionLabels.join(", ")}. Tente novamente mais tarde.
         </Toast>
       )}
       {success && <Toast variant="success">{success}</Toast>}
@@ -82,7 +88,9 @@ export function BookingForm({ services, photographers, locations, loadError }: P
         <Select id="booking-service" data-autofocus {...register("service_id")} aria-invalid={Boolean(errors.service_id)} aria-describedby={errors.service_id ? "booking-service-error" : undefined}>
           <option value="">Selecione um serviço</option>
           {services.map((service) => (
-            <option key={service.id} value={service.id}>{service.nome} · {service.duracao_min} min</option>
+            <option key={service.id} value={service.id}>
+              {service.nome} · {service.duracao_min} min · {formatCurrency(service.preco)}
+            </option>
           ))}
         </Select>
         {errors.service_id && <span id="booking-service-error" className="text-xs font-normal text-red-700">{errors.service_id.message}</span>}
@@ -94,7 +102,8 @@ export function BookingForm({ services, photographers, locations, loadError }: P
           <option value="">Selecione um fotógrafo</option>
           {photographers.map((photographer) => (
             <option key={photographer.profile_id} value={photographer.profile_id}>
-              {photographer.especialidade || `Fotógrafo ${photographer.profile_id.slice(0, 8)}`}
+              {photographer.nome}
+              {photographer.especialidade ? ` · ${photographer.especialidade}` : ""}
             </option>
           ))}
         </Select>
@@ -108,6 +117,7 @@ export function BookingForm({ services, photographers, locations, loadError }: P
           {locations.map((location) => (
             <option key={location.id} value={location.id}>
               {location.nome} · {location.tipo === "estudio" ? "Estúdio" : "Externo"}
+              {location.endereco ? ` · ${location.endereco}` : ""}
             </option>
           ))}
         </Select>

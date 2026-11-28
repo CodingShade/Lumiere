@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createPhotographer, deletePhotographer, updatePhotographer, type PhotographerActionResult } from "@/actions/photographers";
+import { createDemoPhotographers } from "@/actions/demo-photographers";
 import type { PhotographerInput } from "@/lib/validations/photographer";
 import type { PhotographerWithProfile, Profile } from "@/types/database";
 import { PhotographerForm } from "@/components/forms/PhotographerForm";
@@ -11,6 +12,7 @@ import { CrudEmptyState } from "@/components/crud/CrudEmptyState";
 import { CrudHeader } from "@/components/crud/CrudHeader";
 import { ResponsiveCrudList } from "@/components/crud/ResponsiveCrudList";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Modal } from "@/components/ui/Modal";
 import { Table } from "@/components/ui/Table";
@@ -31,10 +33,12 @@ function photographerFormData(values: PhotographerInput) {
 export function PhotographerManager({
   photographers,
   availableProfiles,
+  canCreateDemo,
   loadError,
 }: {
   photographers: PhotographerWithProfile[];
   availableProfiles: Profile[];
+  canCreateDemo: boolean;
   loadError?: string;
 }) {
   const router = useRouter();
@@ -43,6 +47,9 @@ export function PhotographerManager({
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [demoDialogOpen, setDemoDialogOpen] = useState(false);
+  const [demoPending, setDemoPending] = useState(false);
+  const [demoError, setDemoError] = useState<string | null>(null);
 
   async function save(values: PhotographerInput): Promise<PhotographerActionResult> {
     const formData = photographerFormData(values);
@@ -80,7 +87,42 @@ export function PhotographerManager({
     }
   }
 
+  async function confirmCreateDemo() {
+    setDemoPending(true);
+    setDemoError(null);
+    try {
+      const result = await createDemoPhotographers();
+      if (!result.success) {
+        setDemoError(result.error);
+        return;
+      }
+
+      const { created, alreadyPresent, failures } = result.data;
+      const summary = [
+        `${created} conta(s) criada(s)`,
+        `${alreadyPresent} fotógrafo(s) já existente(s) atualizado(s)`,
+      ].join("; ");
+      setFeedback({
+        variant: failures.length > 0 ? "error" : "success",
+        message: failures.length > 0
+          ? `${summary}. Não concluído: ${failures.join(" ")}`
+          : `${summary}. Nenhum e-mail foi enviado.`,
+      });
+      setDemoDialogOpen(false);
+      router.refresh();
+    } catch {
+      setDemoError("Não foi possível criar os fotógrafos de demonstração. Tente novamente.");
+    } finally {
+      setDemoPending(false);
+    }
+  }
+
   const openCreate = () => { setFeedback(null); setEditor("novo"); };
+  const openDemoDialog = () => {
+    setFeedback(null);
+    setDemoError(null);
+    setDemoDialogOpen(true);
+  };
   const openEdit = (photographer: PhotographerWithProfile) => { setFeedback(null); setEditor(photographer); };
   const openDelete = (photographer: PhotographerWithProfile) => {
     setFeedback(null);
@@ -94,7 +136,17 @@ export function PhotographerManager({
         <div>
           <p className="text-sm text-stone-600">Gerencie os fotógrafos vinculados aos perfis de usuário.</p>
         </div>
-        <CrudHeader count={photographers.length} singular="fotógrafo cadastrado" plural="fotógrafos cadastrados" createLabel="Novo fotógrafo" onCreate={openCreate} />
+        <div className="grid gap-3 sm:flex sm:items-center sm:justify-between">
+          <CrudHeader count={photographers.length} singular="fotógrafo cadastrado" plural="fotógrafos cadastrados" createLabel="Novo fotógrafo" onCreate={openCreate} />
+          <Button type="button" variant="secondary" disabled={!canCreateDemo} onClick={openDemoDialog}>
+            Criar 3 fotógrafos de exemplo
+          </Button>
+        </div>
+        {!canCreateDemo && (
+          <Toast variant="info">
+            Configure SUPABASE_SERVICE_ROLE_KEY no servidor para habilitar a criação de contas de demonstração.
+          </Toast>
+        )}
         {feedback && <Toast variant={feedback.variant}>{feedback.message}</Toast>}
         {loadError && <Toast variant="error">{loadError}</Toast>}
 
@@ -185,6 +237,20 @@ export function PhotographerManager({
         onConfirm={confirmDelete}
       >
         {deleteTarget && <>Tem certeza de que deseja excluir <strong>{deleteTarget.profiles.nome}</strong>? O perfil voltará a ser de cliente.</>}
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        open={demoDialogOpen}
+        titulo="Criar fotógrafos de demonstração"
+        confirmLabel="Criar 3 fotógrafos"
+        pendingLabel="Criando..."
+        intent="primary"
+        error={demoError ?? undefined}
+        pending={demoPending}
+        onCancel={() => { setDemoDialogOpen(false); setDemoError(null); }}
+        onConfirm={confirmCreateDemo}
+      >
+        Serão criadas três contas de demonstração com e-mail marcado como confirmado e senha aleatória. Nenhuma mensagem será enviada; as contas não poderão entrar no sistema até que uma senha seja definida.
       </ConfirmDialog>
     </>
   );

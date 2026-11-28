@@ -88,9 +88,13 @@ export function PhotographerForm({
             {errors.profile_id && <span id="photographer-profile-error" className="text-xs font-normal text-red-700">{errors.profile_id.message}</span>}
           </>
         ) : (
-          <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-sm font-normal text-amber-900">
-            Nenhum usuário disponível. Peça para a pessoa se cadastrar primeiro.
-          </p>
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-sm font-normal text-amber-950">
+            <p className="font-medium">Nenhum usuário disponível.</p>
+            <p className="mt-1 leading-6">
+              Esta tela vincula uma conta existente; não cria contas nem envia convites. A pessoa precisa se cadastrar
+              primeiro e aparecer como cliente para ser selecionada.
+            </p>
+          </div>
         )}
       </label>
 

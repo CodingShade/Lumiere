@@ -40,6 +40,15 @@ create table public.photographers (
   created_at timestamptz not null default now()
 );
 
+create view public.photographer_directory as
+select
+  photographers.profile_id,
+  profiles.nome,
+  photographers.especialidade
+from public.photographers as photographers
+join public.profiles as profiles on profiles.id = photographers.profile_id
+where photographers.ativo = true;
+
 create table public.bookings (
   id uuid primary key default gen_random_uuid(),
   client_id uuid not null references public.profiles (id),
@@ -155,4 +164,6 @@ create policy "bookings_update_admin"
   with check ((select public.current_role_name()) = 'admin');
 grant usage on schema public to authenticated;
 grant select, insert, update, delete on public.profiles, public.services, public.locations, public.photographers, public.bookings to authenticated;
+revoke all on public.photographer_directory from public, anon;
+grant select on public.photographer_directory to authenticated;
 grant execute on function public.current_role_name() to authenticated;

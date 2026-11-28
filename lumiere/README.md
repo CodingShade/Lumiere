@@ -33,11 +33,13 @@ O arquivo `.env.local` é ignorado pelo Git. Nunca adicione nele uma chave `serv
 
 No SQL Editor do projeto, execute os arquivos nesta ordem:
 
-1. [`supabase/schema.sql`](./supabase/schema.sql): extensões, enums, tabelas, índices de exclusão de conflito de horário, trigger de perfil, função de papel atual, grants e policies RLS.
-2. [`supabase/functions.sql`](./supabase/functions.sql): RPCs transacionais para cadastrar/excluir fotógrafos e atualizar/restaurar o papel associado.
+1. [`supabase/schema.sql`](./supabase/schema.sql): extensões, enums, tabelas, índices de exclusão de conflito de horário, trigger de perfil, função de papel atual, grants, policies RLS e a view restrita de nomes de fotógrafos ativos para o formulário de agendamento.
+2. [`supabase/functions.sql`](./supabase/functions.sql): RPCs transacionais para cadastrar/excluir fotógrafos, atualizar/restaurar o papel associado e criar perfis de demonstração exclusivamente pelo servidor.
 3. [`supabase/seed.sql`](./supabase/seed.sql), opcional: três serviços e dois locais para demonstração.
 
-Se o schema já tiver sido aplicado antes das correções atuais, execute também [`supabase/fixes.sql`](./supabase/fixes.sql) para permitir locais externos sem endereço e atualizar o fallback do trigger de novos usuários.
+Se o schema já tiver sido aplicado antes das correções atuais, execute também [`supabase/fixes.sql`](./supabase/fixes.sql) para permitir locais externos sem endereço, atualizar o fallback do trigger de novos usuários e disponibilizar a view segura de nomes no formulário de agendamento. Atualize as RPCs executando novamente `supabase/functions.sql`.
+
+Para criar fotógrafos de demonstração, configure `SUPABASE_SERVICE_ROLE_KEY` em `.env.local` (sem prefixo `NEXT_PUBLIC_`; a chave nunca é enviada ao navegador) e execute `supabase/functions.sql` no SQL Editor. Reinicie o servidor local e use **Criar 3 fotógrafos de exemplo** em `/admin/fotografos`. As contas são marcadas como confirmadas sem envio de e-mail e recebem senhas aleatórias descartadas; para permitir login nelas, defina senhas pelo painel do Supabase.
 
 Em **Authentication → URL Configuration**, configure `http://localhost:3000` como URL local e permita `http://localhost:3000/auth/callback` como URL de redirecionamento. Para testar confirmação de e-mail, use uma caixa de entrada acessível; em desenvolvimento, a confirmação também pode ser desabilitada nas opções do provedor de e-mail do Supabase.
 
@@ -74,7 +76,11 @@ Depois de alterar o papel, entre novamente no app para atualizar a sessão.
 - CRUD de serviços em `/admin/servicos`, com validação Zod no servidor e no formulário, listagem responsiva, modal, feedback e bloqueio de exclusão quando existem agendamentos vinculados.
 - CRUD de locais em `/admin/locais`, com endereço obrigatório para estúdios e validação no servidor.
 - CRUD de fotógrafos em `/admin/fotografos`, com seleção de perfis de cliente disponíveis, validação de portfólio e alteração/restauração transacional do papel do perfil por RPC.
+- Criação opcional de três fotógrafos de demonstração em `/admin/fotografos`, por Auth Admin API exclusivamente no servidor; as contas ficam confirmadas sem receber e-mail e sem senha de acesso distribuída.
 - Solicitação de agendamento por clientes em `/agendamentos/novo`: opções ativas do Supabase, cálculo da duração pelo serviço, horário de Brasília e feedback para horários conflitantes ou indisponíveis.
+- Listagem e detalhes de agendamentos conforme o perfil autenticado, com cancelamento e atualização administrativa de status.
+- Agenda de ensaios para fotógrafos e resumo operacional no dashboard.
+- Administração de usuários em `/admin/usuarios`, incluindo alteração dos papéis cliente, fotógrafo e administrador.
 - Schemas SQL com RLS para os papéis previstos e dados de demonstração opcionais.
 
 ## Estrutura principal
@@ -90,8 +96,6 @@ Depois de alterar o papel, entre novamente no app para atualizar a sessão.
 
 ## Próximos passos
 
-- Completar listagens, edição e cancelamento de agendamentos e construir a visualização de agenda do fotógrafo.
-- Implementar o CRUD administrativo de usuários e completar as telas de dashboard e detalhe de agendamento.
 - Adicionar testes automatizados para formulários, permissões e operações no Supabase.
 
 ## Comandos

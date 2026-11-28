@@ -87,10 +87,27 @@ export async function createBooking(formData: FormData): Promise<BookingActionRe
 export async function updateBooking(id: string, _formData: FormData): Promise<BookingActionResult> {
   try {
     const { role } = await getCurrentUser();
-    if (!role) return { success: false, error: "Entre para alterar um agendamento." };
-    parseRecordId(id);
-    void _formData;
-    return { success: false, error: "A edição de agendamentos ainda não está disponível." };
+    if (role !== "admin") return { success: false, error: "Apenas administradores podem alterar o status." };
+    const bookingId = parseRecordId(id);
+    if (!bookingId) return { success: false, error: "Identificador de agendamento inválido." };
+    const status = _formData.get("status");
+    if (!["pendente", "confirmado", "cancelado", "concluido"].includes(String(status))) {
+      return { success: false, error: "Selecione um status válido." };
+    }
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("bookings")
+      .update({ status: status as Booking["status"] })
+      .eq("id", bookingId)
+      .select("*")
+      .maybeSingle();
+    if (error) return { success: false, error: "Não foi possível atualizar o agendamento." };
+    if (!data) return { success: false, error: "Agendamento não encontrado." };
+    revalidatePath("/agendamentos");
+    revalidatePath(`/agendamentos/${bookingId}`);
+    revalidatePath("/fotografo/agenda");
+    revalidatePath("/dashboard");
+    return { success: true, data };
   } catch {
     return { success: false, error: "Não foi possível atualizar o agendamento." };
   }
@@ -98,10 +115,34 @@ export async function updateBooking(id: string, _formData: FormData): Promise<Bo
 
 export async function deleteBooking(id: string): Promise<BookingActionResult> {
   try {
-    const { role } = await getCurrentUser();
-    if (!role) return { success: false, error: "Entre para cancelar um agendamento." };
-    parseRecordId(id);
-    return { success: false, error: "O cancelamento de agendamentos ainda não está disponível." };
+    const { user, role } = await getCurrentUser();
+    if (!user) return { success: false, error: "Entre para cancelar um agendamento." };
+    const bookingId = parseRecordId(id);
+    if (!bookingId) return { success: false, error: "Identificador de agendamento inválido." };
+    const supabase = await createClient();
+    const { data: booking, error: readError } = await supabase
+      .from("bookings")
+      .select("id, client_id, photographer_id")
+      .eq("id", bookingId)
+      .maybeSingle();
+    if (readError) return { success: false, error: "Não foi possível consultar o agendamento." };
+    if (!booking) return { success: false, error: "Agendamento não encontrado." };
+    if (role !== "admin" && booking.client_id !== user.id && booking.photographer_id !== user.id) {
+      return { success: false, error: "Você não pode cancelar este agendamento." };
+    }
+    const { data, error } = await supabase
+      .from("bookings")
+      .update({ status: "cancelado" })
+      .eq("id", bookingId)
+      .select("*")
+      .maybeSingle();
+    if (error) return { success: false, error: "Não foi possível cancelar o agendamento." };
+    if (!data) return { success: false, error: "Agendamento não encontrado." };
+    revalidatePath("/agendamentos");
+    revalidatePath(`/agendamentos/${bookingId}`);
+    revalidatePath("/fotografo/agenda");
+    revalidatePath("/dashboard");
+    return { success: true, data };
   } catch {
     return { success: false, error: "Não foi possível cancelar o agendamento." };
   }
